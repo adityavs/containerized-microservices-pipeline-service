@@ -1,5 +1,18 @@
+# Database
+The Database folder container scripts and files required to develop on the database
 
-# Contributing
+## Run the database in a container
+- (Optional) Create the  image `docker build -t login-backend .`. Make sure you are in the `Database` folder.
+- Run the image in a Docker container: `docker run -p 1433:1433 --rm -it login-backend`
+
+# Middle Tier - Login Service
+
+## Run the Login Service in a container
+- (Optional) Create the image `docker build -t login-middletier .`. Make sure you are in the `LoginService` folder.
+- Run the image in a Docker container: `docker run -p 4201:4201 --rm -it login-middletier`.
+
+
+## Contributing
 
 This project welcomes contributions and suggestions.  Most contributions require you to agree to a
 Contributor License Agreement (CLA) declaring that you have the right to, and actually do, grant us
