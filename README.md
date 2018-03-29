@@ -2,14 +2,14 @@
 The Database folder container scripts and files required to develop on the database
 
 ## Run the database in a container
-- (Optional) Create the  image `docker build -t login-backend .`. Make sure you are in the `Database` folder.
-- Run the image in a Docker container: `docker run -p 1433:1433 --rm -it login-backend`
+- (Optional) Create the  image `docker build -t backend .`. Make sure you are in the `Database` folder.
+- Run the image in a Docker container: `docker run -p 1433:1433 --rm -it backend`
 
 # Middle Tier - Login Service
 
 ## Run the Login Service in a container
-- (Optional) Create the image `docker build -t login-middletier .`. Make sure you are in the `LoginService` folder.
-- Run the image in a Docker container: `docker run -p 4201:4201 --rm -it login-middletier`.
+- (Optional) Create the image `docker build -t service .`. Make sure you are in the `LoginService` folder.
+- Run the image in a Docker container: `docker run -p 4201:4201 --rm -it service`.
 
 
 ## Contributing
