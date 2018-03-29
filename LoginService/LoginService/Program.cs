@@ -14,15 +14,12 @@ namespace LoginService
     {
         public static void Main(string[] args)
         {
-            string urls = args.Length > 0 ? args[0] : "http://localhost:4201/";
-
-            BuildWebHost(urls).Run();
+            BuildWebHost(args).Run();
         }
 
-        public static IWebHost BuildWebHost(string urls) =>
-            WebHost.CreateDefaultBuilder()
+        public static IWebHost BuildWebHost(string[] args) =>
+            WebHost.CreateDefaultBuilder(args)
                 .UseStartup<Startup>()
-                .UseUrls(urls)
                 .Build();
     }
 }
