@@ -1,25 +1,14 @@
+using LoginService.Controllers;
+using LoginService.Models;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Threading.Tasks;
-using LoginService.Controllers;
-using LoginService.Data;
-using LoginService.Models;
-using LoginService.Services;
-using LoginServiceTests.Stubs;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.Features.Authentication;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using Moq;
 
 namespace LoginServiceTests
 {
@@ -49,7 +38,7 @@ namespace LoginServiceTests
 
             user = await Context.Users.SingleAsync();
 
-            var target = new AccountController(UserManager, ConfigMock.Object);
+            var target = new AccountController(UserManager);
 
             var claims = new List<Claim>
             {
@@ -83,7 +72,7 @@ namespace LoginServiceTests
         [TestMethod]
         public async Task AccountControllerTestCreate()
         {
-            var target = new AccountController(UserManager, ConfigMock.Object);
+            var target = new AccountController(UserManager);
 
             var request = new ApiUserModel
             {
@@ -112,9 +101,74 @@ namespace LoginServiceTests
         }
 
         [TestMethod]
+        public async Task AccountControllerTestCreateNoPassword()
+        {
+            var target = new AccountController(UserManager);
+
+            var request = new ApiUserModel
+            {
+                UserName = Guid.NewGuid().ToString(),
+                Email = $"{Guid.NewGuid()}@host.com",
+           };
+
+            var response = (BadRequestObjectResult)await target.Post(request);
+
+            Assert.AreEqual(400, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task AccountControllerTestCreateNoUsername()
+        {
+            var target = new AccountController(UserManager);
+
+            var request = new ApiUserModel
+            {
+                Email = $"{Guid.NewGuid()}@host.com",
+                Password = "ABCdef123!@#"
+            };
+
+            var response = (BadRequestObjectResult)await target.Post(request);
+
+            Assert.AreEqual(400, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task AccountControllerTestCreateEmptyUsername()
+        {
+            var target = new AccountController(UserManager);
+
+            var request = new ApiUserModel
+            {
+                UserName = "",
+                Email = $"{Guid.NewGuid()}@host.com",
+                Password = "ABCdef123!@#"
+            };
+
+            var response = (BadRequestObjectResult)await target.Post(request);
+
+            Assert.AreEqual(400, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task AccountControllerTestCreateNoEmail()
+        {
+            var target = new AccountController(UserManager);
+
+            var request = new ApiUserModel
+            {
+                UserName = Guid.NewGuid().ToString(),
+                Password = "ABCdef123!@#"
+            };
+
+            var response = (BadRequestObjectResult)await target.Post(request);
+
+            Assert.AreEqual(400, response.StatusCode);
+        }
+
+        [TestMethod]
         public async Task AccountControllerTestCreateInvalidEmail()
         {
-            var target = new AccountController(UserManager, ConfigMock.Object);
+            var target = new AccountController(UserManager);
 
             var request = new ApiUserModel
             {
@@ -129,9 +183,19 @@ namespace LoginServiceTests
         }
 
         [TestMethod]
+        public async Task AccountControllerTestCreateEmptyBody()
+        {
+            var target = new AccountController(UserManager);
+
+            var response = (BadRequestObjectResult)await target.Post(null);
+
+            Assert.AreEqual(400, response.StatusCode);
+        }
+
+        [TestMethod]
         public async Task AccountControllerTestCreateDuplicate()
         {
-            var target = new AccountController(UserManager, ConfigMock.Object);
+            var target = new AccountController(UserManager);
 
             var request = new ApiUserModel
             {
@@ -166,7 +230,7 @@ namespace LoginServiceTests
             userExist = await Context.Users.AnyAsync(u => u.Id == user2.Id);
             Assert.IsTrue(userExist);
 
-            var target = new AccountController(UserManager, ConfigMock.Object);
+            var target = new AccountController(UserManager);
 
             var result = (OkResult)await target.Delete(user1.Id);
             Assert.AreEqual(200, result.StatusCode);
@@ -195,7 +259,7 @@ namespace LoginServiceTests
 
             user = await Context.Users.SingleAsync();
 
-            var target = new AccountController(UserManager, ConfigMock.Object);
+            var target = new AccountController(UserManager);
 
             var claims = new List<Claim>
             {
@@ -224,6 +288,82 @@ namespace LoginServiceTests
         }
 
         [TestMethod]
+        public async Task AccountControllerTestChangeInvalidEmail()
+        {
+            string password = "ABCdef123!@#";
+
+            var user = new ApplicationUser
+            {
+                UserName = Guid.NewGuid().ToString(),
+                Email = $"{Guid.NewGuid()}@host.com",
+            };
+
+            var created = await UserManager.CreateAsync(user, password);
+
+            Assert.IsTrue(created.Succeeded);
+
+            user = await Context.Users.SingleAsync();
+
+            var target = new AccountController(UserManager);
+
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
+                new Claim(ClaimTypes.NameIdentifier, user.Id)
+            };
+
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(claims));
+
+            target.ControllerContext = new ControllerContext()
+            {
+                HttpContext = new DefaultHttpContext() { User = principal }
+            };
+
+            var request = new ApiUserModel { Email = "invalid email" };
+
+            var response = (BadRequestObjectResult)await target.Put(request);
+
+            Assert.AreEqual(400, response.StatusCode);
+        }
+
+        [TestMethod]
+        public async Task AccountControllerTestChangeEmptyBody()
+        {
+            string password = "ABCdef123!@#";
+
+            var user = new ApplicationUser
+            {
+                UserName = Guid.NewGuid().ToString(),
+                Email = $"{Guid.NewGuid()}@host.com",
+            };
+
+            var created = await UserManager.CreateAsync(user, password);
+
+            Assert.IsTrue(created.Succeeded);
+
+            user = await Context.Users.SingleAsync();
+
+            var target = new AccountController(UserManager);
+
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
+                new Claim(ClaimTypes.NameIdentifier, user.Id)
+            };
+
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(claims));
+
+            target.ControllerContext = new ControllerContext()
+            {
+                HttpContext = new DefaultHttpContext() { User = principal }
+            };
+
+            var response = (BadRequestObjectResult)await target.Put(null);
+
+            Assert.AreEqual(400, response.StatusCode);
+        }
+
+        [TestMethod]
         public async Task AccountControllerTestChangePassword()
         {
             string password = "ABCdef123!@#";
@@ -241,7 +381,7 @@ namespace LoginServiceTests
 
             user = await Context.Users.SingleAsync();
 
-            var target = new AccountController(UserManager, ConfigMock.Object);
+            var target = new AccountController(UserManager);
 
             var claims = new List<Claim>
             {
@@ -267,6 +407,46 @@ namespace LoginServiceTests
             bool passwordChanged = await UserManager.CheckPasswordAsync(user, request.NewPassword);
 
             Assert.IsTrue(passwordChanged);
+        }
+
+        [TestMethod]
+        public async Task AccountControllerTestChangeInvalidPassword()
+        {
+            string password = "ABCdef123!@#";
+            string email = $"{Guid.NewGuid()}@host.com";
+
+            var user = new ApplicationUser
+            {
+                UserName = Guid.NewGuid().ToString(),
+                Email = email,
+            };
+
+            var created = await UserManager.CreateAsync(user, password);
+
+            Assert.IsTrue(created.Succeeded);
+
+            user = await Context.Users.SingleAsync();
+
+            var target = new AccountController(UserManager);
+
+            var claims = new List<Claim>
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, user.UserName),
+                new Claim(ClaimTypes.NameIdentifier, user.Id)
+            };
+
+            var principal = new ClaimsPrincipal(new ClaimsIdentity(claims));
+
+            target.ControllerContext = new ControllerContext()
+            {
+                HttpContext = new DefaultHttpContext() { User = principal }
+            };
+
+            var request = new ApiUserModel { Password = password, NewPassword = " " };
+
+            var response = (BadRequestObjectResult)await target.Put(request);
+
+            Assert.AreEqual(400, response.StatusCode);
         }
     }
 }

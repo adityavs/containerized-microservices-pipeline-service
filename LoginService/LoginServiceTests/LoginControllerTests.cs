@@ -60,11 +60,19 @@ namespace LoginServiceTests
         }
 
         [TestMethod]
+        public async Task LoginControllerTestEmptyBody()
+        {
+            var target = new LoginController(UserManager, SignInManager, ConfigMock.Object);
+
+            var actual = (BadRequestObjectResult)await target.Post(null);
+
+            Assert.AreEqual(400, actual.StatusCode);
+        }
+
+        [TestMethod]
         public async Task LoginControllerTestAbsentUser()
         {
-            var config = new Mock<IConfiguration>();
-
-            var target = new LoginController(UserManager, SignInManager, config.Object);
+            var target = new LoginController(UserManager, SignInManager, ConfigMock.Object);
 
             var request = new ApiUserModel { UserName = "absent user", Password = "invalid password" };
 

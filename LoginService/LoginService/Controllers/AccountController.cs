@@ -1,15 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using LoginService.Models;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using LoginService.Models;
-using LoginService.Services;
 using Microsoft.Extensions.Configuration;
-using Microsoft.AspNetCore.Cors;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace LoginService.Controllers
 {
@@ -19,12 +16,10 @@ namespace LoginService.Controllers
     public class AccountController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly AccountManager _acountManager;
 
-        public AccountController(UserManager<ApplicationUser> userManager, IConfiguration configuration)
+        public AccountController(UserManager<ApplicationUser> userManager)
         {
-            _userManager = userManager;
-            _acountManager = new AccountManager(userManager, configuration);
+            _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         }
 
         /// <summary>
@@ -54,14 +49,23 @@ namespace LoginService.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody]ApiUserModel model)
         {
+            if (model == null)
+            {
+                return BadRequest("Failed: HTTP request body is required.");
+            }
+
+            if (model.Password == null)
+            {
+                return BadRequest("Failed: Password is required.");
+            }
+
             var user = new ApplicationUser { UserName = model.UserName, Email = model.Email };
 
             var result = await _userManager.CreateAsync(user, model.Password);
 
             if (!result.Succeeded)
             {
-                string errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                return BadRequest($"Cannot create account '{errors}'.");
+                return BadRequest(result.ToString());
             }
 
             ApiUserModel response = new ApiUserModel { Email = user.Email, Id = user.Id, UserName = user.UserName };
@@ -78,6 +82,11 @@ namespace LoginService.Controllers
         [Authorize]
         public async Task<IActionResult> Put([FromBody]ApiUserModel model)
         {
+            if (model == null)
+            {
+                return BadRequest("Failed: HTTP request body is required.");
+            }
+
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
             {
@@ -85,13 +94,26 @@ namespace LoginService.Controllers
             }
 
             if (!string.IsNullOrEmpty(model.NewPassword))
-            {
-                await _acountManager.ChangePassword(user, model.Password, model.NewPassword);
+            {                
+                var changePasswordResult = await _userManager.ChangePasswordAsync(user, model.Password, model.NewPassword);
+                if (!changePasswordResult.Succeeded)
+                {
+                    return BadRequest(changePasswordResult.ToString());
+                }
+
                 return Ok();
             }
             else if (!string.IsNullOrEmpty(model.Email))
             {
-                await _acountManager.ChangeEmail(user, model.Email);
+                //await _acountManager.ChangeEmail(user, model.Email);
+                if (user.Email != model.Email)
+                {
+                    var setEmailResult = await _userManager.SetEmailAsync(user, model.Email);
+                    if (!setEmailResult.Succeeded)
+                    {
+                        return BadRequest(setEmailResult.ToString());
+                    }
+                }
                 return Ok();
             }
 
@@ -115,7 +137,12 @@ namespace LoginService.Controllers
                 return NotFound();
             }
 
-            await _userManager.DeleteAsync(user);
+            var result = await _userManager.DeleteAsync(user);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(result.ToString());
+            }
 
             return Ok();
         }
