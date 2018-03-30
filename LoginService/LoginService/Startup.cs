@@ -87,6 +87,8 @@ namespace LoginService
                     };
                 });
 
+            services.AddApplicationInsightsTelemetry(Configuration);
+
             services.AddMvc();
         }
 
