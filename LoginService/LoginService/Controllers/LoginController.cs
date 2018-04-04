@@ -54,20 +54,27 @@ namespace LoginService.Controllers
             var username = model.UserName;
             var password = model.Password;
 
-            using (var client = new SqlConnection("Server=tcp:microservice2.database.windows.net,1433;Initial Catalog=testSQL2;Persist Security Info=False;User ID=azureuser;Password=Pa$$w0rd1234;MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;")) {
+            using (var client = new SqlConnection(Settings.HCConnectionString)) {
                 client.Open();
                 string commandString = "SELECT * from dbo.users WHERE username='" + username + "' AND pswd='" + password + "'";
-                Console.WriteLine("Command String: " + commandString);
                 SqlCommand cmd = new SqlCommand(commandString, client);
-                Console.Write(cmd);
                 SqlDataReader reader = cmd.ExecuteReader();
                 try
                 {
-                    while (reader.Read())
-                    {
-                        Console.WriteLine(String.Format("{0}, {1}, {2}",
-                            reader[0], reader[1], reader[2]));
+                    if (reader.Read()){
+                        var appUser = _userManager.Users.SingleOrDefault(r => r.UserName == model.UserName);
+
+                        string token = await GenerateJwtTokenAsync(appUser);
+
+                        var result = new ApiUserModel { Token = token, Id = appUser.Id, UserName = appUser.UserName, Email = appUser.Email };
+
+                        return Ok(result);
                     }
+                    //while (reader.Read())
+                    //{
+                    //    Console.WriteLine(String.Format("{0}, {1}, {2}",
+                    //        reader[0], reader[1], reader[2]));
+                    //}
                 }
                 finally
                 {
@@ -75,19 +82,19 @@ namespace LoginService.Controllers
                 }
             }
 
-            var signIn = await _signInManager.PasswordSignInAsync(model.UserName, model.Password, false, false);
+            //var signIn = await _signInManager.PasswordSignInAsync(model.UserName, model.Password, false, false);
 
 
-            if (signIn.Succeeded)
-            {
-                var appUser = _userManager.Users.SingleOrDefault(r => r.UserName == model.UserName);
+            //if (signIn.Succeeded)
+            //{
+            //    var appUser = _userManager.Users.SingleOrDefault(r => r.UserName == model.UserName);
 
-                string token = await GenerateJwtTokenAsync(appUser);
+            //    string token = await GenerateJwtTokenAsync(appUser);
 
-                var result = new ApiUserModel { Token = token, Id = appUser.Id, UserName = appUser.UserName, Email = appUser.Email };
+            //    var result = new ApiUserModel { Token = token, Id = appUser.Id, UserName = appUser.UserName, Email = appUser.Email };
 
-                return Ok(result);
-            }
+            //    return Ok(result);
+            //}
 
             return Unauthorized();
         }
