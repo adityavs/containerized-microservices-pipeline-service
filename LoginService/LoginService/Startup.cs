@@ -4,13 +4,16 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Azure.KeyVault;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace LoginService
 {
@@ -34,7 +37,14 @@ namespace LoginService
             }
             else
             {
+                string sqlPassword = GetSecret("sql-password");
+                connectionString = connectionString.Replace("{password}", sqlPassword);
                 services.AddDbContext<ApplicationDbContext>((options) => options.UseSqlServer(connectionString));
+            }
+
+            if (string.IsNullOrEmpty(Configuration["JwtKey"]))
+            {
+                Configuration["JwtKey"] = GetSecret("token-sign-key");
             }
 
             services.AddIdentity<ApplicationUser, IdentityRole>()
@@ -103,6 +113,30 @@ namespace LoginService
             app.UseAuthentication();
 
             app.UseMvc();
+        }
+
+        private string GetSecret(string secretName)
+        {
+            using (var kv = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(GetTokenAsync)))
+            {
+                var sec = kv.GetSecretAsync($"{Configuration["SecretsVaultUrl"]}/secrets/{secretName}").Result;
+
+                return sec.Value;
+            }
+        }
+
+        private async Task<string> GetTokenAsync(string authority, string resource, string scope)
+        {
+            var authContext = new AuthenticationContext(authority);
+            var clientCred = new ClientCredential(Configuration["AadAppId"], Configuration["AadPassword"]);
+            var result = await authContext.AcquireTokenAsync(resource, clientCred);
+
+            if (result == null)
+            {
+                throw new InvalidOperationException("Failed to obtain the JWT token");
+            }
+
+            return result.AccessToken;
         }
     }
 }
