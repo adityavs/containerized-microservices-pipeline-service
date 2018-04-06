@@ -1,5 +1,7 @@
 ﻿using LoginService.Data;
 using LoginService.Models;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -20,9 +22,14 @@ namespace LoginService
 {
     public class Startup
     {
+        private readonly TelemetryClient TelemetryClient;
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+
+            string appInsightsKey = Configuration["ApplicationInsights:InstrumentationKey"];
+            TelemetryClient = new TelemetryClient(new TelemetryConfiguration(appInsightsKey));
         }
 
         public IConfiguration Configuration { get; }
@@ -45,6 +52,8 @@ namespace LoginService
                 }
                 services.AddDbContext<ApplicationDbContext>((options) => options.UseSqlServer(connectionString));
             }
+
+            TelemetryClient.TrackTrace($"connection string: '{connectionString}'"); // Need to debug secrets in K8s. TODO: remove before releasing to production.
 
             if (string.IsNullOrEmpty(Configuration["JwtKey"]))
             {
