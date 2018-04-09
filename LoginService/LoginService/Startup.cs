@@ -147,6 +147,12 @@ namespace LoginService
 
         private async Task<string> GetTokenAsync(string authority, string resource, string scope)
         {
+            /* 
+             * Azure Principle password must be stored in the configured AadPasswordFilePath. 
+             * In production the file will be written by deployment (Hexadite) into 
+             * /secrets/secrets/mt-aad-password
+             * In dev, create the file with the password and point AadPasswordFilePath to it.
+             */
             string aadPassword = await File.ReadAllTextAsync(Configuration["AadPasswordFilePath"]);
 
             var authContext = new AuthenticationContext(authority);
