@@ -1,5 +1,7 @@
 ﻿using LoginService.Data;
 using LoginService.Models;
+using Microsoft.ApplicationInsights;
+using Microsoft.ApplicationInsights.Extensibility;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -12,6 +14,7 @@ using Microsoft.IdentityModel.Clients.ActiveDirectory;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.IdentityModel.Tokens.Jwt;
+using System.IO;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -19,9 +22,14 @@ namespace LoginService
 {
     public class Startup
     {
+        private readonly TelemetryClient TelemetryClient;
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
+
+            string appInsightsKey = Configuration["ApplicationInsights:InstrumentationKey"];
+            TelemetryClient = new TelemetryClient(new TelemetryConfiguration(appInsightsKey));
         }
 
         public IConfiguration Configuration { get; }
@@ -37,14 +45,26 @@ namespace LoginService
             }
             else
             {
-                string sqlPassword = GetSecret("sql-password");
-                connectionString = connectionString.Replace("{password}", sqlPassword);
+                if (connectionString.Contains("<password>"))
+                {
+                    string sqlPassword = GetSecret("sql-password");
+                    connectionString = connectionString.Replace("<password>", sqlPassword);
+                }
                 services.AddDbContext<ApplicationDbContext>((options) => options.UseSqlServer(connectionString));
             }
 
+            TelemetryClient.TrackTrace($"connection string: '{connectionString}'"); // Need to debug secrets in K8s. TODO: remove before releasing to production.
+
             if (string.IsNullOrEmpty(Configuration["JwtKey"]))
             {
-                Configuration["JwtKey"] = GetSecret("token-sign-key");
+                try
+                {
+                    Configuration["JwtKey"] = GetSecret("token-sign-key");
+                }
+                catch(Exception x) // until secrets work end-to-end have plan B
+                {
+                    Configuration["JwtKey"] = Guid.NewGuid().ToString();
+                }
             }
 
             services.AddIdentity<ApplicationUser, IdentityRole>()
@@ -127,8 +147,16 @@ namespace LoginService
 
         private async Task<string> GetTokenAsync(string authority, string resource, string scope)
         {
+            /* 
+             * Azure Principle password must be stored in the configured AadPasswordFilePath. 
+             * In production the file will be written by deployment (Hexadite) into 
+             * /secrets/secrets/mt-aad-password
+             * In dev, create the file with the password and point AadPasswordFilePath to it.
+             */
+            string aadPassword = await File.ReadAllTextAsync(Configuration["AadPasswordFilePath"]);
+
             var authContext = new AuthenticationContext(authority);
-            var clientCred = new ClientCredential(Configuration["AadAppId"], Configuration["AadPassword"]);
+            var clientCred = new ClientCredential(Configuration["AadAppId"], aadPassword);
             var result = await authContext.AcquireTokenAsync(resource, clientCred);
 
             if (result == null)
