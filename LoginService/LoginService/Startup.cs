@@ -28,9 +28,7 @@ namespace LoginService
         {
             string connectionString = Configuration.GetConnectionString("DefaultConnection");
             string testData = Settings.testConfigMap;
-            string testSecret = Settings.testSecrets;
             Console.WriteLine(testData);
-            Console.WriteLine(testSecret);
 
             if (connectionString == "DataSource=app.db")
             {
