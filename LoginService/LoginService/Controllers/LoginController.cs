@@ -1,4 +1,5 @@
 ﻿using LoginService.Models;
+using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -25,6 +26,7 @@ namespace LoginService.Controllers
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
         private readonly IConfiguration _configuration;
+        private readonly TelemetryClient _telemetryClient = new TelemetryClient();
 
         public LoginController(
             UserManager<ApplicationUser> userManager,
@@ -60,8 +62,12 @@ namespace LoginService.Controllers
 
                 var result = new ApiUserModel { Token = token, Id = appUser.Id, UserName = appUser.UserName, Email = appUser.Email };
 
+                _telemetryClient.TrackEvent("Successfull login.");
+
                 return Ok(result);
             }
+
+            _telemetryClient.TrackEvent("Failed login.");
 
             return Unauthorized();
         }

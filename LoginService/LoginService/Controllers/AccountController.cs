@@ -1,4 +1,5 @@
 ﻿using LoginService.Models;
+using Microsoft.ApplicationInsights;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Identity;
@@ -16,6 +17,7 @@ namespace LoginService.Controllers
     public class AccountController : Controller
     {
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly TelemetryClient _telemetryClient = new TelemetryClient();
 
         public AccountController(UserManager<ApplicationUser> userManager)
         {
@@ -69,6 +71,8 @@ namespace LoginService.Controllers
             }
 
             ApiUserModel response = new ApiUserModel { Email = user.Email, Id = user.Id, UserName = user.UserName };
+
+            _telemetryClient.TrackEvent("User created.");
 
             return Ok(response);
         }
