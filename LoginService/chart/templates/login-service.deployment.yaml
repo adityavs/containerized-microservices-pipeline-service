@@ -1,0 +1,34 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "microservice-service-deployment.fullname" . }}-deployment
+  labels:
+    app: {{ template "microservice-service-deployment.name" . }}
+    chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.app.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "microservice-service-deployment.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "microservice-service-deployment.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+      - name: {{ .Chart.Name }}
+        image: {{ .Values.app.image.repository }}/{{ .Values.app.image.imageName }}:{{ .Values.app.image.tag }}
+        imagePullPolicy: {{ .Values.app.image.pullPolicy }}
+        ports:
+          - name: http
+            containerPort: 4201
+            protocol: TCP
+        resources:
+          requests:
+            cpu: {{ .Values.app.cpu }}
+      imagePullSecrets:
+        - name: {{ .Values.app.imagePullSecrets }}
