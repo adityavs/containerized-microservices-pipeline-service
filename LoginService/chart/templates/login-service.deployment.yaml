@@ -30,5 +30,40 @@ spec:
         resources:
           requests:
             cpu: {{ .Values.app.cpu }}
+        volumeMounts:
+        - name: secrets
+          mountPath: /secrets
+          readOnly: true
+            
+      initContainers:
+      - name: keyvault-agent
+        image: {{ .Values.hexadite.image.repository }}/{{ .Values.hexadite.image.imageName }}:{{ .Values.hexadite.image.tag }}
+        env:
+        - name: VAULT_BASE_URL
+          value: {{ .Values.hexadite.keyVault }}
+        - name: SERVICE_PRINCIPLE_FILE_PATH
+          value: /host/azure.json
+        - name: SECRETS_FOLDER
+          value: /secrets
+        - name: SECRETS_KEYS
+          value: mt-aad-password
+        volumeMounts:
+        - name: secrets
+          mountPath: /secrets
+        - name: host-sp
+          mountPath: /host/azure.json
+          readOnly: true
+          
       imagePullSecrets:
         - name: {{ .Values.app.imagePullSecrets }}
+
+      volumes:
+      - name: secrets
+        emptyDir:
+          # we want the secrets to reside only in-memory
+          medium: Memory
+      - name: host-sp
+        hostPath:
+          # this file contains the cluster service-principal, it exists on every node by default
+          path: /etc/kubernetes/azure.json
+          #type: File # commented out because current cubctl doesn't understand it.
