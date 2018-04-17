@@ -131,7 +131,7 @@ namespace LoginService.Controllers
         /// <param name="id">Id of the account to be deleted.</param>
         /// <returns>Operation status.</returns>
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Administrator")]
         public async Task<IActionResult> Delete(string id)
         {
             var user = _userManager.Users.SingleOrDefault(r => r.Id == id);
