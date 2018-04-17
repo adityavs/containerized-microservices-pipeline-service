@@ -62,7 +62,7 @@ namespace LoginService.Controllers
 
                 var result = new ApiUserModel { Token = token, Id = appUser.Id, UserName = appUser.UserName, Email = appUser.Email };
 
-                _telemetryClient.TrackEvent("Successfull login.");
+                _telemetryClient.TrackEvent("Successful login.");
 
                 return Ok(result);
             }
@@ -75,8 +75,9 @@ namespace LoginService.Controllers
         [HttpGet("{value}")]
         public string Get(string value)
         {
-            //Test method to troubleshoot connectivity. Will be removed once CI/CD with ACR works.
-            return "Echo > " + value;
+            //Test method to troubleshoot connectivity. Will be removed once CI/CD with ACR works
+            string testing = Environment.GetEnvironmentVariable("TEST_VAL_KEY");
+            return "Echo > " + testing;
         }
 
         private async Task<string> GenerateJwtTokenAsync(ApplicationUser user)
@@ -94,11 +95,15 @@ namespace LoginService.Controllers
 
             claims.AddRange(roleClaims);
 
+            //var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JwtKey")));
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtKey"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            //var expires = DateTime.Now.AddMinutes(Convert.ToDouble(Environment.GetEnvironmentVariable("JwtExpireMinutes")));
             var expires = DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["JwtExpireMinutes"]));
 
             var token = new JwtSecurityToken(
+                //issuer: Environment.GetEnvironmentVariable("JwtIssuer"),
+                //audience: Environment.GetEnvironmentVariable("JwtAudience"),
                 issuer: _configuration["JwtIssuer"],
                 audience: _configuration["JwtAudience"],
                 claims: claims,
