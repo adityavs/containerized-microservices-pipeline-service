@@ -5,7 +5,7 @@
 app:
   replicaCount: 3
   image:
-    repository: acrmicroserviceswestus.azurecr.io # ACR Login Server
+    repository: acrmicrok8eastus.azurecr.io # ACR Login Server
     imageName: containerized-microservices-pipeline-service
     tag: canary
     pullPolicy: Always
@@ -25,6 +25,28 @@ hexadite:
   keyVault: https://microservices-deploy-kv.vault.azure.net/
 
 service:
-  type: ClusterIP
+  type: ClusterIP 
   port: 80
   targetPort: 4201
+
+configs:
+  - name: TEST_VAL_KEY
+    key: testdata
+  - name: CONNECTION_STRING
+    key: ConnectionString
+  - name: APP_INSIGHTS_KEY
+    key: ApplicationInsightsKey
+  - name: JWT_KEY
+    key: JwtKey
+  - name: JWT_ISSUER
+    key: JwtIssuer
+  - name: JWT_AUDIENCE
+    key: JwtAudience
+  - name: CORS_ORIGINS
+    key: CorsOrigins
+  - name: SECRETS_VAULT_URL
+    key: SecretsVaultUrl
+  - name: AAD_PASS_FILE_PATH
+    key: AadPasswordFilePath
+  - name: AAD_APP_ID
+    key: AadAppId

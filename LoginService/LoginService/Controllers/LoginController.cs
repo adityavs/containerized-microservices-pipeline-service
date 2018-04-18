@@ -95,17 +95,13 @@ namespace LoginService.Controllers
 
             claims.AddRange(roleClaims);
 
-            //var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JwtKey")));
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtKey"]));
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JwtKey")));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            //var expires = DateTime.Now.AddMinutes(Convert.ToDouble(Environment.GetEnvironmentVariable("JwtExpireMinutes")));
-            var expires = DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["JwtExpireMinutes"]));
+            var expires = DateTime.Now.AddMinutes(Convert.ToDouble(Environment.GetEnvironmentVariable("JwtExpireMinutes")));
 
             var token = new JwtSecurityToken(
-                //issuer: Environment.GetEnvironmentVariable("JwtIssuer"),
-                //audience: Environment.GetEnvironmentVariable("JwtAudience"),
-                issuer: _configuration["JwtIssuer"],
-                audience: _configuration["JwtAudience"],
+                issuer: Environment.GetEnvironmentVariable("JwtIssuer"),
+                audience: Environment.GetEnvironmentVariable("JwtAudience"),
                 claims: claims,
                 expires: expires,
                 signingCredentials: creds
