@@ -75,7 +75,6 @@ namespace LoginService.Controllers
         [HttpGet("{value}")]
         public string Get(string value)
         {
-            //Test method to troubleshoot connectivity. Will be removed once CI/CD with ACR works
             string testing = Environment.GetEnvironmentVariable("TEST_VAL_KEY");
             return "Echo > " + testing;
         }
@@ -95,11 +94,9 @@ namespace LoginService.Controllers
 
             claims.AddRange(roleClaims);
 
-            // var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Environment.GetEnvironmentVariable("JWT_KEY")));
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtKey"]));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var expires = DateTime.Now.AddMinutes(Convert.ToDouble(_configuration["JwtExpireMinutes"]));
-            // var expires = DateTime.Now.AddMinutes(Convert.ToDouble(Environment.GetEnvironmentVariable("JwtExpireMinutes")));
+            var expires = DateTime.Now.AddMinutes(Convert.ToDouble(Environment.GetEnvironmentVariable("JwtExpireMinutes")));
 
             var token = new JwtSecurityToken(
                 issuer: Environment.GetEnvironmentVariable("JWT_ISSUER"),
