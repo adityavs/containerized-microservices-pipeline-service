@@ -39,8 +39,6 @@ namespace LoginService
         public void ConfigureServices(IServiceCollection services)
         {
             string connectionString = Environment.GetEnvironmentVariable("CONNECTION_STRING");
-            string testing = Environment.GetEnvironmentVariable("TEST_VAL_KEY");
-
 
             if (connectionString == "DataSource=app.db")
             {
@@ -67,7 +65,7 @@ namespace LoginService
                 catch(Exception x) // until secrets work end-to-end have plan B
                 {
                     _telemetryClient.TrackException(x);
-                    Environment.GetEnvironmentVariable("JWT_KEY");
+                    Configuration["JwtKey"] = Guid.NewGuid().ToString();
                 }
             }
 

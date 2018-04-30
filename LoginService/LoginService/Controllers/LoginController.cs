@@ -75,8 +75,7 @@ namespace LoginService.Controllers
         [HttpGet("{value}")]
         public string Get(string value)
         {
-            string testing = Environment.GetEnvironmentVariable("TEST_VAL_KEY");
-            return "Echo > " + testing;
+            return "Echo > " + value;
         }
 
         private async Task<string> GenerateJwtTokenAsync(ApplicationUser user)
